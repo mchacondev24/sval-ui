@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Base Sval UI Color Tokens (defaults overridden dynamically by Theme Engine) */
+    --sval-color-primary: #1e293b;
+    --sval-color-primary-hover: #0f172a;
+    --sval-color-primary-foreground: #ffffff;
+    --sval-color-accent: #0284c7;
+
+    --sval-bg: #f8fafc;
+    --sval-surface-1: #ffffff;
+    --sval-surface-2: #f1f5f9;
+    --sval-surface-3: #e2e8f0;
+
+    --sval-border-subtle: #f1f5f9;
+    --sval-border-default: #e2e8f0;
+    --sval-border-strong: #cbd5e1;
+
+    --sval-text-primary: #0f172a;
+    --sval-text-secondary: #475569;
+    --sval-text-muted: #94a3b8;
+
+    --sval-radius-sm: 4px;
+    --sval-radius-md: 8px;
+    --sval-radius-lg: 12px;
+    --sval-radius-xl: 16px;
+
+    --sval-space-unit: 4px;
+    --sval-density: comfortable;
+
+    /* Aliases for universal system integration */
+    --aura-color-primary: var(--sval-color-primary);
+    --aura-color-primary-hover: var(--sval-color-primary-hover);
+    --aura-color-primary-foreground: var(--sval-color-primary-foreground);
+    --aura-color-accent: var(--sval-color-accent);
+    --aura-bg: var(--sval-bg);
+    --aura-surface-1: var(--sval-surface-1);
+    --aura-surface-2: var(--sval-surface-2);
+    --aura-surface-3: var(--sval-surface-3);
+    --aura-border-subtle: var(--sval-border-subtle);
+    --aura-border-default: var(--sval-border-default);
+    --aura-border-strong: var(--sval-border-strong);
+    --aura-text-primary: var(--sval-text-primary);
+    --aura-text-secondary: var(--sval-text-secondary);
+    --aura-text-muted: var(--sval-text-muted);
+    --aura-radius-sm: var(--sval-radius-sm);
+    --aura-radius-md: var(--sval-radius-md);
+    --aura-radius-lg: var(--sval-radius-lg);
+    --aura-radius-xl: var(--sval-radius-xl);
+    --aura-space-unit: var(--sval-space-unit);
+    --aura-density: var(--sval-density);
+  }
+
+  .dark {
+    --sval-bg: #090d16;
+    --sval-surface-1: #0f172a;
+    --sval-surface-2: #1e293b;
+    --sval-surface-3: #334155;
+
+    --sval-border-subtle: #1e293b;
+    --sval-border-default: #334155;
+    --sval-border-strong: #475569;
+
+    --sval-text-primary: #f8fafc;
+    --sval-text-secondary: #cbd5e1;
+    --sval-text-muted: #64748b;
+
+    --sval-color-primary: #f8fafc;
+    --sval-color-primary-hover: #e2e8f0;
+    --sval-color-primary-foreground: #0f172a;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--aura-bg);
+  color: var(--aura-text-primary);
+}
+
+/* Custom crisp minimal scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* ==========================================================================
+   METALLIC FINISH & ANGULAR MATERIAL 3 ELEVATION
+   Nordic Titanium, Brushed Specular Sheen & Jewel Colored Accents
+   ========================================================================== */
+
+.sval-metallic-card {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.85) 50%, rgba(241, 245, 249, 0.95) 100%);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 4px 16px -2px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  position: relative;
+}
+
+.dark .sval-metallic-card {
+  background: linear-gradient(155deg, #1e2634 0%, #151b26 50%, #0f131c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 10px 24px -4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.sval-metallic-surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(241, 245, 249, 0.92) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dark .sval-metallic-surface {
+  background: linear-gradient(180deg, #1d2432 0%, #131822 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+.sval-metallic-pill {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(226, 232, 240, 0.85) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.dark .sval-metallic-pill {
+  background: linear-gradient(135deg, #273142 0%, #161c28 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Material 3 Angular Elevation Layers */
+.mat-elevation-1 {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+.mat-elevation-2 {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+.mat-elevation-3 {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+.mat-elevation-4 {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.12);
+}
+
+/* Shimmer Gleam Effect for Metallic Highlights */
+.metallic-gleam {
+  position: relative;
+  overflow: hidden;
+}
+.metallic-gleam::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+  transition: 0.6s ease;
+}
+.metallic-gleam:hover::after {
+  left: 200%;
+}
+
+

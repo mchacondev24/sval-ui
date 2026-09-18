@@ -1,0 +1,6 @@
+{
+  "name": "Sval Design System",
+  "description": "Next-Generation Universal UI & Design System with Nordic Minimalism, Token-First Architecture, and Multi-Framework support created by Maxwell Chacón.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
