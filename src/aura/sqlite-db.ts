@@ -1,4 +1,5 @@
 import initSqlJs, { Database } from 'sql.js';
+import { validateSqlSafety } from './security';
 
 let dbInstance: Database | null = null;
 let initPromise: Promise<Database> | null = null;
@@ -180,8 +181,31 @@ export async function getAuraDatabase(): Promise<Database> {
 }
 
 export async function runQuery(sql: string): Promise<{ columns: string[]; values: any[][] }[]> {
+  const safety = validateSqlSafety(sql);
+  if (!safety.isSafe) {
+    throw new Error(safety.violation || 'SQL safety check failed.');
+  }
+
   const db = await getAuraDatabase();
   return db.exec(sql);
+}
+
+export async function runParameterizedQuery(sql: string, params: any[] = []): Promise<{ columns: string[]; values: any[][] }[]> {
+  const safety = validateSqlSafety(sql);
+  if (!safety.isSafe) {
+    throw new Error(safety.violation || 'SQL safety check failed.');
+  }
+
+  const db = await getAuraDatabase();
+  const stmt = db.prepare(sql);
+  const rows: any[][] = [];
+  stmt.bind(params);
+  while (stmt.step()) {
+    rows.push(stmt.get());
+  }
+  const columns = stmt.getColumnNames();
+  stmt.free();
+  return [{ columns, values: rows }];
 }
 
 export async function saveThemeToSQLite(theme: {
