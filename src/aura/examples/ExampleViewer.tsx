@@ -28,6 +28,7 @@ import { MarketingExample } from './MarketingExample';
 import { AuthExamples } from './AuthExamples';
 import { FormsExample } from './FormsExample';
 import { StartersExample } from './StartersExample';
+import { BusinessSuiteExample } from './BusinessSuiteExample';
 import { SaaSDashboardTemplate } from '../templates/SaaSDashboardTemplate';
 import { ECommerceGridTemplate } from '../templates/ECommerceGridTemplate';
 import { SettingsProfileTemplate } from '../templates/SettingsProfileTemplate';
@@ -51,7 +52,83 @@ export const ExampleViewer: React.FC<ExampleViewerProps> = ({
   const [copied, setCopied] = useState(false);
 
   // Generate real code representation
-  const sampleReactCode = `import React from 'react';
+  const sampleReactCode = example.id === 'app-business-suite' ? `// Sval UI Design System — Suite Comercial Integrada (React)
+// Arquitectura con Base de Datos JSON en Memoria RAM (Zero Persistence)
+import React, { useState } from 'react';
+import { 
+  AuraButton, 
+  AuraCard, 
+  AuraBadge, 
+  AuraInput,
+  AuraDialog 
+} from '@sval-ui/react';
+
+// Estructura de Datos JSON en Memoria Volátil
+interface Customer { id: string; name: string; email: string; city: string; totalPurchases: number; }
+interface Product { id: string; code: string; name: string; price: number; stock: number; }
+interface Sale { id: string; saleNumber: string; customerName: string; total: number; date: string; }
+
+export function BusinessSuiteApp() {
+  // 1. Estado de Autenticación (Login)
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'productos' | 'ventas' | 'reportes'>('dashboard');
+
+  // 2. Base de Datos Temporal en Estado React (Se borra al salir)
+  const [customers, setCustomers] = useState<Customer[]>([
+    { id: 'CLI-001', name: 'Corporación Managua S.A.', email: 'corp@managua.ni', city: 'Managua', totalPurchases: 4850 },
+    { id: 'CLI-002', name: 'Distribuidora del Norte', email: 'ventas@disnorte.com', city: 'Estelí', totalPurchases: 2340 },
+  ]);
+
+  const [products, setProducts] = useState<Product[]>([
+    { id: 'PROD-101', code: 'SVAL-SRV-01', name: 'Licencia Enterprise Sval UI', price: 499, stock: 45 },
+    { id: 'PROD-102', code: 'HW-NODE-03', name: 'Servidor Edge IoT Micro-Gateway', price: 850, stock: 8 },
+  ]);
+
+  const [sales, setSales] = useState<Sale[]>([
+    { id: 'VTA-1001', saleNumber: 'FAC-2026-001', customerName: 'Corporación Managua S.A.', total: 1953.85, date: '2026-09-17' },
+  ]);
+
+  // Handler de Facturación Directa
+  const handleCheckout = (productId: string, customerId: string, qty: number) => {
+    const prod = products.find(p => p.id === productId);
+    const cust = customers.find(c => c.id === customerId);
+    if (!prod || !cust) return;
+
+    const total = (prod.price * qty) * 1.15; // Con IVA 15%
+    const newSale = {
+      id: \`VTA-\${Date.now()}\`,
+      saleNumber: \`FAC-2026-\${sales.length + 1}\`,
+      customerName: cust.name,
+      total,
+      date: new Date().toISOString().split('T')[0],
+    };
+
+    // Actualiza en memoria RAM únicamente
+    setSales(prev => [newSale, ...prev]);
+    setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: p.stock - qty } : p));
+  };
+
+  return (
+    <div className="sval-layout max-w-7xl mx-auto p-6 font-sans">
+      <header className="flex items-center justify-between pb-4 border-b border-[var(--aura-border-default)]">
+        <div>
+          <h1 className="text-xl font-bold text-[var(--aura-text-primary)]">Suite Comercial Sval</h1>
+          <p className="text-xs text-[var(--aura-text-secondary)]">Base de Datos Efímera en Memoria RAM</p>
+        </div>
+        <AuraBadge variant="success" dot>RAM Activa (Zero Persistence)</AuraBadge>
+      </header>
+
+      {/* Renderizado de Módulos: Dashboard, Clientes, Productos, Ventas, Reportes */}
+      <nav className="flex gap-2 my-4">
+        {(['dashboard', 'clientes', 'productos', 'ventas', 'reportes'] as const).map(tab => (
+          <AuraButton key={tab} variant={activeTab === tab ? 'primary' : 'outline'} size="sm" onClick={() => setActiveTab(tab)}>
+            {tab.toUpperCase()}
+          </AuraButton>
+        ))}
+      </nav>
+    </div>
+  );
+}` : `import React from 'react';
 import { 
   AuraButton, 
   AuraCard, 
@@ -140,6 +217,8 @@ export default function ${example.name.replace(/[^a-zA-Z0-9]/g, '')}() {
 
   const renderComponent = () => {
     switch (example.id) {
+      case 'app-business-suite':
+        return <BusinessSuiteExample />;
       case 'app-pos':
         return <PosExample />;
       case 'dashboard-basic':

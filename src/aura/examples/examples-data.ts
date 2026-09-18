@@ -50,6 +50,18 @@ export const EXAMPLES_CATALOG: ExampleMetadata[] = [
 
   // Applications
   {
+    id: 'app-business-suite',
+    name: 'Suite Comercial: Login, Clientes, Productos, Ventas y Reportes',
+    category: 'Applications',
+    description: 'Sistema empresarial integrado con pantalla de Login, panel de control KPI, gestión de clientes, inventario de productos, facturación POS y generación de reportes ejecutivos con base de datos JSON efímera en memoria RAM (Zero Persistence).',
+    tags: ['ERP', 'Login', 'Clientes', 'Productos', 'Ventas', 'Reporte', 'JSON RAM'],
+    componentsUsed: ['Card', 'Button', 'Badge', 'Dialog', 'Input', 'Select', 'Tabs'],
+    featured: true,
+    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+    accentColor: 'sky',
+    badgeText: 'Suite ERP Modular',
+  },
+  {
     id: 'app-pos',
     name: 'Point of Sale (POS)',
     category: 'Applications',
