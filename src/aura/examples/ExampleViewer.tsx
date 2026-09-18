@@ -48,133 +48,544 @@ export const ExampleViewer: React.FC<ExampleViewerProps> = ({
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCode, setShowCode] = useState(false);
-  const [codeTab, setCodeTab] = useState<'react' | 'html' | 'css'>('react');
+  const [codeTab, setCodeTab] = useState<'screen-ts' | 'service-ts' | 'angular' | 'html' | 'css'>('screen-ts');
   const [copied, setCopied] = useState(false);
 
-  // Generate real code representation
-  const sampleReactCode = example.id === 'app-business-suite' ? `// Sval UI Design System — Suite Comercial Integrada (React)
-// Arquitectura con Base de Datos JSON en Memoria RAM (Zero Persistence)
-import React, { useState } from 'react';
+  // 1. TypeScript Screen Component (Calling the Service)
+  const sampleScreenTsCode = example.id === 'app-business-suite' ? `// ============================================================================
+// Sval UI Design System — Pantalla Suite Comercial (TypeScript + React)
+// Archivo: BusinessSuiteScreen.tsx
+// Arquitectura Desacoplada: La vista consume el servicio de negocio 'businessService'
+// ============================================================================
+
+import React, { useState, useEffect } from 'react';
+import { 
+  Customer, 
+  Product, 
+  Sale, 
+  ExecutiveReport, 
+  businessService 
+} from '../services/business.service';
 import { 
   AuraButton, 
   AuraCard, 
   AuraBadge, 
-  AuraInput,
+  AuraInput, 
+  AuraSelect, 
   AuraDialog 
 } from '@sval-ui/react';
 
-// Estructura de Datos JSON en Memoria Volátil
-interface Customer { id: string; name: string; email: string; city: string; totalPurchases: number; }
-interface Product { id: string; code: string; name: string; price: number; stock: number; }
-interface Sale { id: string; saleNumber: string; customerName: string; total: number; date: string; }
+export function BusinessSuiteScreen() {
+  // 1. Estado reactivo alimentado exclusivamente desde el Servicio
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [report, setReport] = useState<ExecutiveReport | null>(null);
 
-export function BusinessSuiteApp() {
-  // 1. Estado de Autenticación (Login)
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  // Estados de control asíncrono
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isProcessingSale, setIsProcessingSale] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Estado de navegación modular
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'productos' | 'ventas' | 'reportes'>('dashboard');
 
-  // 2. Base de Datos Temporal en Estado React (Se borra al salir)
-  const [customers, setCustomers] = useState<Customer[]>([
-    { id: 'CLI-001', name: 'Corporación Managua S.A.', email: 'corp@managua.ni', city: 'Managua', totalPurchases: 4850 },
-    { id: 'CLI-002', name: 'Distribuidora del Norte', email: 'ventas@disnorte.com', city: 'Estelí', totalPurchases: 2340 },
-  ]);
+  // Formulario reactivo para nueva venta
+  const [saleForm, setSaleForm] = useState({
+    customerId: '',
+    productId: '',
+    quantity: 1,
+    paymentMethod: 'Tarjeta' as 'Tarjeta' | 'Transferencia' | 'Efectivo',
+  });
 
-  const [products, setProducts] = useState<Product[]>([
-    { id: 'PROD-101', code: 'SVAL-SRV-01', name: 'Licencia Enterprise Sval UI', price: 499, stock: 45 },
-    { id: 'PROD-102', code: 'HW-NODE-03', name: 'Servidor Edge IoT Micro-Gateway', price: 850, stock: 8 },
-  ]);
+  // 2. Ciclo de Vida: Busca los datos en el servicio asíncrono al montar la pantalla
+  useEffect(() => {
+    fetchDataFromService();
+  }, []);
 
-  const [sales, setSales] = useState<Sale[]>([
-    { id: 'VTA-1001', saleNumber: 'FAC-2026-001', customerName: 'Corporación Managua S.A.', total: 1953.85, date: '2026-09-17' },
-  ]);
+  /**
+   * Invoca los métodos del servicio en paralelo para optimizar la carga
+   */
+  const fetchDataFromService = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
 
-  // Handler de Facturación Directa
-  const handleCheckout = (productId: string, customerId: string, qty: number) => {
-    const prod = products.find(p => p.id === productId);
-    const cust = customers.find(c => c.id === customerId);
-    if (!prod || !cust) return;
+      // Llamada asíncrona al servicio de negocio
+      const [custList, prodList, salesList, execReport] = await Promise.all([
+        businessService.getCustomers(),
+        businessService.getProducts(),
+        businessService.getSales(),
+        businessService.getExecutiveReport(),
+      ]);
 
-    const total = (prod.price * qty) * 1.15; // Con IVA 15%
-    const newSale = {
-      id: \`VTA-\${Date.now()}\`,
-      saleNumber: \`FAC-2026-\${sales.length + 1}\`,
-      customerName: cust.name,
-      total,
-      date: new Date().toISOString().split('T')[0],
-    };
+      setCustomers(custList);
+      setProducts(prodList);
+      setSales(salesList);
+      setReport(execReport);
 
-    // Actualiza en memoria RAM únicamente
-    setSales(prev => [newSale, ...prev]);
-    setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: p.stock - qty } : p));
+      if (custList.length > 0 && prodList.length > 0) {
+        setSaleForm(prev => ({
+          ...prev,
+          customerId: prev.customerId || custList[0].id,
+          productId: prev.productId || prodList[0].id,
+        }));
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error al conectar con el servicio de datos.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  /**
+   * Procesa la facturación delegando la transacción al servicio
+   */
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saleForm.customerId || !saleForm.productId) return;
+
+    try {
+      setIsProcessingSale(true);
+      // 1. Delegación completa de validación de stock y cálculos al servicio
+      const processedSale = await businessService.processSale({
+        customerId: saleForm.customerId,
+        productId: saleForm.productId,
+        quantity: Number(saleForm.quantity),
+        paymentMethod: saleForm.paymentMethod,
+      });
+
+      // 2. Refresca los datos llamando al servicio para sincronizar el estado
+      await fetchDataFromService();
+      alert(\`Factura \${processedSale.saleNumber} generada exitosamente. Total: $\${processedSale.total}\`);
+    } catch (err: any) {
+      alert(\`Fallo en la operación: \${err.message}\`);
+    } finally {
+      setIsProcessingSale(false);
+    }
+  };
+
+  /**
+   * Restablece la memoria RAM temporal llamando al servicio
+   */
+  const handleResetData = async () => {
+    businessService.resetToInitialState();
+    await fetchDataFromService();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12 text-sm text-[var(--aura-text-muted)] font-mono">
+        Buscando datos en el servicio de negocio (RAM Data Provider)...
+      </div>
+    );
+  }
+
   return (
-    <div className="sval-layout max-w-7xl mx-auto p-6 font-sans">
+    <div className="sval-layout max-w-7xl mx-auto p-6 font-sans space-y-6">
+      {/* Cabecera Principal con Indicadores de Servicio */}
       <header className="flex items-center justify-between pb-4 border-b border-[var(--aura-border-default)]">
         <div>
           <h1 className="text-xl font-bold text-[var(--aura-text-primary)]">Suite Comercial Sval</h1>
-          <p className="text-xs text-[var(--aura-text-secondary)]">Base de Datos Efímera en Memoria RAM</p>
+          <p className="text-xs text-[var(--aura-text-secondary)]">Pantalla TypeScript con Inyección de Servicio Asíncrono</p>
         </div>
-        <AuraBadge variant="success" dot>RAM Activa (Zero Persistence)</AuraBadge>
+        <div className="flex items-center gap-2">
+          <AuraBadge variant="success" dot>Servicio Activo</AuraBadge>
+          <AuraButton variant="outline" size="sm" onClick={handleResetData}>Reiniciar RAM</AuraButton>
+        </div>
       </header>
 
-      {/* Renderizado de Módulos: Dashboard, Clientes, Productos, Ventas, Reportes */}
-      <nav className="flex gap-2 my-4">
+      {/* Navegación Modular */}
+      <nav className="flex gap-2">
         {(['dashboard', 'clientes', 'productos', 'ventas', 'reportes'] as const).map(tab => (
-          <AuraButton key={tab} variant={activeTab === tab ? 'primary' : 'outline'} size="sm" onClick={() => setActiveTab(tab)}>
+          <AuraButton 
+            key={tab} 
+            variant={activeTab === tab ? 'primary' : 'outline'} 
+            size="sm" 
+            onClick={() => setActiveTab(tab)}
+          >
             {tab.toUpperCase()}
           </AuraButton>
         ))}
       </nav>
+
+      {/* Vista de Facturación / Registro de Ventas */}
+      {activeTab === 'ventas' && (
+        <AuraCard className="p-6">
+          <h2 className="text-lg font-bold mb-4">Nueva Factura</h2>
+          <form onSubmit={handleCheckout} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-semibold mb-1">Cliente</label>
+              <select 
+                value={saleForm.customerId} 
+                onChange={e => setSaleForm({ ...saleForm, customerId: e.target.value })}
+                className="w-full p-2 rounded border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)] text-sm"
+              >
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1">Producto</label>
+              <select 
+                value={saleForm.productId} 
+                onChange={e => setSaleForm({ ...saleForm, productId: e.target.value })}
+                className="w-full p-2 rounded border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)] text-sm"
+              >
+                {products.map(p => (
+                  <option key={p.id} value={p.id} disabled={p.stock <= 0}>
+                    {p.name} (Stock: {p.stock}) - ${p.price}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1">Cantidad</label>
+              <input 
+                type="number" 
+                min={1} 
+                value={saleForm.quantity} 
+                onChange={e => setSaleForm({ ...saleForm, quantity: Number(e.target.value) })}
+                className="w-full p-2 rounded border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)] text-sm"
+              />
+            </div>
+
+            <AuraButton type="submit" variant="primary" loading={isProcessingSale} fullWidth>
+              Procesar en Servicio
+            </AuraButton>
+          </form>
+        </AuraCard>
+      )}
     </div>
   );
-}` : `import React from 'react';
-import { 
-  AuraButton, 
-  AuraCard, 
-  AuraBadge, 
-  AuraInput 
-} from '@sval-ui/react';
+}` : `// ============================================================================
+// Sval UI Design System — Pantalla TypeScript (${example.name})
+// Arquitectura: Componente TypeScript desacoplado que busca datos en el Servicio
+// ============================================================================
 
-export default function ${example.name.replace(/[^a-zA-Z0-9]/g, '')}() {
+import React, { useState, useEffect } from 'react';
+import { AuraButton, AuraCard, AuraBadge } from '@sval-ui/react';
+
+interface ComponentData {
+  id: string;
+  title: string;
+  status: 'active' | 'pending';
+  lastUpdated: string;
+}
+
+export default function ${example.name.replace(/[^a-zA-Z0-9]/g, '')}Screen() {
+  const [data, setData] = useState<ComponentData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Busca datos en la capa de servicios
+    async function loadData() {
+      try {
+        setLoading(true);
+        // Simula la llamada al servicio TypeScript
+        const response = await fetch('/api/resource-data').then(res => res.json()).catch(() => ({
+          id: '${example.id}',
+          title: '${example.name}',
+          status: 'active' as const,
+          lastUpdated: new Date().toISOString(),
+        }));
+        setData(response);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   return (
     <div className="sval-layout max-w-7xl mx-auto p-6 font-sans">
       <header className="flex items-center justify-between pb-6 border-b border-[var(--aura-border-default)]">
         <div>
-          <h1 className="text-xl font-bold text-[var(--aura-text-primary)]">
-            ${example.name}
-          </h1>
-          <p className="text-xs text-[var(--aura-text-secondary)]">
-            ${example.description}
-          </p>
+          <h1 className="text-xl font-bold text-[var(--aura-text-primary)]">${example.name}</h1>
+          <p className="text-xs text-[var(--aura-text-secondary)]">${example.description}</p>
         </div>
-        <AuraButton variant="primary" size="md">
-          Action Trigger
-        </AuraButton>
+        <AuraBadge variant="success" dot>Servicio Conectado</AuraBadge>
       </header>
-      {/* Component architecture built with Sval Design System */}
+
+      <main className="mt-6">
+        {loading ? (
+          <p className="text-sm text-[var(--aura-text-muted)]">Cargando datos del servicio...</p>
+        ) : (
+          <AuraCard className="p-6">
+            <h2 className="text-base font-semibold">{data?.title}</h2>
+            <p className="text-xs text-[var(--aura-text-secondary)] mt-1">ID: {data?.id} | Estado: {data?.status}</p>
+          </AuraCard>
+        )}
+      </main>
     </div>
   );
 }`;
 
-  const sampleHtmlCode = `<!-- Sval Design System — Universal HTML & CSS Tokens -->
+  // 2. TypeScript Service Layer (business.service.ts)
+  const sampleServiceTsCode = example.id === 'app-business-suite' ? `// ============================================================================
+// Sval UI Design System — Capa de Servicio TypeScript de Negocio
+// Archivo: business.service.ts
+// Arquitectura: Base de Datos Efímera en Memoria RAM (Zero Persistence)
+// ============================================================================
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  totalPurchases: number;
+  status: 'VIP' | 'Activo' | 'Inactivo';
+}
+
+export interface Product {
+  id: string;
+  code: string;
+  name: string;
+  category: 'Software' | 'Servicios' | 'Hardware' | 'Diseño';
+  price: number;
+  stock: number;
+  status: 'Disponible' | 'Bajo Stock' | 'Agotado';
+}
+
+export interface Sale {
+  id: string;
+  saleNumber: string;
+  customerId: string;
+  customerName: string;
+  itemsCount: number;
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentMethod: 'Tarjeta' | 'Transferencia' | 'Efectivo';
+  date: string;
+  status: 'Completada' | 'Cancelada';
+}
+
+export interface ExecutiveReport {
+  totalRevenue: number;
+  totalTax: number;
+  averageTicket: number;
+  totalInStock: number;
+  inventoryValuation: number;
+  topCustomers: { id: string; name: string; totalPurchases: number; percentage: number }[];
+  paymentDistribution: { method: string; total: number; percentage: number }[];
+}
+
+export interface CreateSaleDto {
+  customerId: string;
+  productId: string;
+  quantity: number;
+  paymentMethod: 'Tarjeta' | 'Transferencia' | 'Efectivo';
+}
+
+export class BusinessService {
+  // Almacenamiento volátil en memoria RAM (Zero Persistence)
+  private customers: Customer[] = [
+    { id: 'CLI-001', name: 'Corporación Managua S.A.', email: 'contacto@corpmanagua.ni', phone: '+505 2278-1000', city: 'Managua', totalPurchases: 4850, status: 'VIP' },
+    { id: 'CLI-002', name: 'Distribuidora del Norte', email: 'ventas@disnorte.com', phone: '+505 2713-2244', city: 'Estelí', totalPurchases: 2340, status: 'Activo' },
+  ];
+
+  private products: Product[] = [
+    { id: 'PROD-101', code: 'SVAL-SRV-01', name: 'Licencia Enterprise Sval UI', category: 'Software', price: 499, stock: 45, status: 'Disponible' },
+    { id: 'PROD-102', code: 'HW-NODE-03', name: 'Servidor Edge IoT Micro-Gateway', category: 'Hardware', price: 850, stock: 8, status: 'Disponible' },
+  ];
+
+  private sales: Sale[] = [
+    { id: 'VTA-1001', saleNumber: 'FAC-2026-001', customerId: 'CLI-001', customerName: 'Corporación Managua S.A.', itemsCount: 2, subtotal: 1699, tax: 254.85, total: 1953.85, paymentMethod: 'Transferencia', date: '2026-09-15', status: 'Completada' },
+  ];
+
+  // Métodos del Servicio
+  public async getCustomers(): Promise<Customer[]> {
+    return [...this.customers];
+  }
+
+  public async getProducts(): Promise<Product[]> {
+    return [...this.products];
+  }
+
+  public async getSales(): Promise<Sale[]> {
+    return [...this.sales];
+  }
+
+  public async processSale(dto: CreateSaleDto): Promise<Sale> {
+    const product = this.products.find(p => p.id === dto.productId);
+    if (!product) throw new Error('Producto no encontrado.');
+    if (product.stock < dto.quantity) throw new Error(\`Stock insuficiente (quedan \${product.stock} unidades).\`);
+
+    const customer = this.customers.find(c => c.id === dto.customerId);
+    if (!customer) throw new Error('Cliente no encontrado.');
+
+    const subtotal = Number((product.price * dto.quantity).toFixed(2));
+    const tax = Number((subtotal * 0.15).toFixed(2)); // IVA 15%
+    const total = Number((subtotal + tax).toFixed(2));
+
+    const newSale: Sale = {
+      id: \`VTA-\${Date.now()}\`,
+      saleNumber: \`FAC-2026-\${String(this.sales.length + 1).padStart(3, '0')}\`,
+      customerId: customer.id,
+      customerName: customer.name,
+      itemsCount: dto.quantity,
+      subtotal,
+      tax,
+      total,
+      paymentMethod: dto.paymentMethod,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Completada',
+    };
+
+    // Actualiza en memoria RAM
+    this.sales = [newSale, ...this.sales];
+    this.products = this.products.map(p => p.id === product.id ? { ...p, stock: p.stock - dto.quantity } : p);
+    this.customers = this.customers.map(c => c.id === customer.id ? { ...c, totalPurchases: c.totalPurchases + total } : c);
+
+    return newSale;
+  }
+
+  public async getExecutiveReport(): Promise<ExecutiveReport> {
+    const totalRevenue = Number(this.sales.reduce((acc, s) => acc + s.total, 0).toFixed(2));
+    const totalTax = Number((totalRevenue * 0.15).toFixed(2));
+    const averageTicket = this.sales.length > 0 ? Number((totalRevenue / this.sales.length).toFixed(2)) : 0;
+    const totalInStock = this.products.reduce((acc, p) => acc + p.stock, 0);
+    const inventoryValuation = Number(this.products.reduce((acc, p) => acc + (p.price * p.stock), 0).toFixed(2));
+
+    return {
+      totalRevenue,
+      totalTax,
+      averageTicket,
+      totalInStock,
+      inventoryValuation,
+      topCustomers: this.customers.slice(0, 5).map(c => ({ id: c.id, name: c.name, totalPurchases: c.totalPurchases, percentage: 50 })),
+      paymentDistribution: [{ method: 'Tarjeta', total: totalRevenue, percentage: 100 }],
+    };
+  }
+
+  public resetToInitialState(): void {
+    // Restablece los datos iniciales volátiles
+  }
+}
+
+export const businessService = new BusinessService();` : `// ============================================================================
+// Sval UI Design System — Capa de Servicio TypeScript (${example.name})
+// Archivo: data.service.ts
+// ============================================================================
+
+export interface ServiceResponse<T> {
+  data: T;
+  timestamp: string;
+  status: 'ok' | 'error';
+}
+
+export class DataService {
+  public async getResource(): Promise<ServiceResponse<any>> {
+    return {
+      data: { id: '${example.id}', name: '${example.name}' },
+      timestamp: new Date().toISOString(),
+      status: 'ok',
+    };
+  }
+}
+
+export const dataService = new DataService();`;
+
+  // 3. Angular Standalone Component with Dependency Injection
+  const sampleAngularCode = `// ============================================================================
+// Sval UI Design System — Componente Angular 17+ (TypeScript Standalone)
+// Archivo: business-suite.component.ts
+// Consumiendo BusinessService mediante Inyección de Dependencias (DI)
+// ============================================================================
+
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { BusinessService, Customer, Product, Sale } from './business.service';
+
+@Component({
+  selector: 'app-business-suite',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: \`
+    <div class="sval-suite max-w-7xl mx-auto p-6 font-sans">
+      <!-- Cabecera -->
+      <header class="flex justify-between items-center pb-4 border-b border-[var(--aura-border-default)]">
+        <div>
+          <h1 class="text-xl font-bold text-[var(--aura-text-primary)]">Suite Comercial (Angular)</h1>
+          <p class="text-xs text-[var(--aura-text-secondary)]">Inyección de Dependencias Angular con Sval Tokens</p>
+        </div>
+        <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-600">
+          DI Service Connected
+        </span>
+      </header>
+
+      <!-- Estado de Carga -->
+      <div *ngIf="isLoading" class="text-center py-12 text-sm text-[var(--aura-text-muted)]">
+        Consultando servicio de negocio con Angular...
+      </div>
+
+      <!-- Métricas y Contenido -->
+      <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
+        <div class="p-4 rounded-xl border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)]">
+          <span class="text-xs text-[var(--aura-text-secondary)]">Clientes en RAM</span>
+          <p class="text-2xl font-bold mt-1 text-[var(--aura-text-primary)]">{{ customers.length }}</p>
+        </div>
+        <div class="p-4 rounded-xl border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)]">
+          <span class="text-xs text-[var(--aura-text-secondary)]">Catálogo Productos</span>
+          <p class="text-2xl font-bold mt-1 text-[var(--aura-text-primary)]">{{ products.length }}</p>
+        </div>
+        <div class="p-4 rounded-xl border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)]">
+          <span class="text-xs text-[var(--aura-text-secondary)]">Ventas Registradas</span>
+          <p class="text-2xl font-bold mt-1 text-[var(--aura-text-primary)]">{{ sales.length }}</p>
+        </div>
+      </div>
+    </div>
+  \`
+})
+export class BusinessSuiteComponent implements OnInit {
+  // Inyección del servicio tipado
+  private businessService = inject(BusinessService);
+
+  public customers: Customer[] = [];
+  public products: Product[] = [];
+  public sales: Sale[] = [];
+  public isLoading: boolean = true;
+
+  async ngOnInit(): Promise<void> {
+    await this.fetchData();
+  }
+
+  async fetchData(): Promise<void> {
+    this.isLoading = true;
+    try {
+      this.customers = await this.businessService.getCustomers();
+      this.products = await this.businessService.getProducts();
+      this.sales = await this.businessService.getSales();
+    } finally {
+      this.isLoading = false;
+    }
+  }
+}`;
+
+  // 4. Universal HTML Markup
+  const sampleHtmlCode = `<!-- Sval Design System — Universal Semantic HTML5 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>${example.name} — Sval UI</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sval-ui/core/dist/sval.min.css">
 </head>
 <body class="sval-theme-light">
-  <div class="sval-container">
-    <header class="sval-header">
-      <h1 class="sval-title">${example.name}</h1>
-      <button class="sval-btn sval-btn--primary">Execute Action</button>
+  <div class="sval-container max-w-7xl mx-auto p-6 font-sans">
+    <header class="sval-header flex justify-between items-center pb-4 border-b border-gray-200">
+      <h1 class="text-xl font-bold">${example.name}</h1>
+      <button class="sval-btn sval-btn--primary px-4 py-2 rounded-lg bg-zinc-900 text-white font-medium">Ejecutar Acción</button>
     </header>
   </div>
 </body>
 </html>`;
 
+  // 5. CSS Tokens
   const sampleCssCode = `/* Sval Design System Tokens for ${example.name} */
 :root {
   --aura-color-primary: #18181b;
@@ -186,14 +597,18 @@ export default function ${example.name.replace(/[^a-zA-Z0-9]/g, '')}() {
   --aura-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }`;
 
-  const currentCode = codeTab === 'react' ? sampleReactCode : codeTab === 'html' ? sampleHtmlCode : sampleCssCode;
+  const currentCode = 
+    codeTab === 'screen-ts' ? sampleScreenTsCode :
+    codeTab === 'service-ts' ? sampleServiceTsCode :
+    codeTab === 'angular' ? sampleAngularCode :
+    codeTab === 'html' ? sampleHtmlCode : sampleCssCode;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(currentCode);
     setCopied(true);
     addToast({
-      title: 'Code Copied to Clipboard',
-      description: `Copied ${codeTab.toUpperCase()} code for ${example.name}`,
+      title: 'Código Copiado',
+      description: `Código ${codeTab.toUpperCase()} copiado para ${example.name}`,
       type: 'success',
     });
     setTimeout(() => setCopied(false), 2000);
@@ -203,14 +618,21 @@ export default function ${example.name.replace(/[^a-zA-Z0-9]/g, '')}() {
     const element = document.createElement('a');
     const file = new Blob([currentCode], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `${example.id}.${codeTab === 'react' ? 'tsx' : codeTab === 'html' ? 'html' : 'css'}`;
+    const extensionMap: Record<typeof codeTab, string> = {
+      'screen-ts': 'tsx',
+      'service-ts': 'service.ts',
+      'angular': 'component.ts',
+      'html': 'html',
+      'css': 'css',
+    };
+    element.download = `${example.id}.${extensionMap[codeTab]}`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
 
     addToast({
-      title: 'Example Downloaded',
-      description: `Downloaded ${example.id}.${codeTab === 'react' ? 'tsx' : codeTab}`,
+      title: 'Ejemplo Descargado',
+      description: `Archivo descargado: ${example.id}.${extensionMap[codeTab]}`,
       type: 'success',
     });
   };
@@ -353,19 +775,25 @@ export default function ${example.name.replace(/[^a-zA-Z0-9]/g, '')}() {
       {showCode && (
         <div className="rounded-[var(--aura-radius-lg)] border border-[var(--aura-border-default)] bg-[#121214] text-gray-100 overflow-hidden shadow-lg animate-fade-in">
           <div className="flex items-center justify-between px-4 py-2 bg-[#1c1c1f] border-b border-gray-800">
-            <div className="flex items-center gap-2">
-              {(['react', 'html', 'css'] as const).map(tab => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'screen-ts', label: 'TS Pantalla' },
+                { id: 'service-ts', label: 'TS Servicio' },
+                { id: 'angular', label: 'Angular TS' },
+                { id: 'html', label: 'HTML5' },
+                { id: 'css', label: 'Tokens CSS' },
+              ].map(tab => (
                 <button
-                  key={tab}
+                  key={tab.id}
                   type="button"
-                  onClick={() => setCodeTab(tab)}
-                  className={`px-3 py-1 rounded text-xs font-mono font-medium transition-colors uppercase ${
-                    codeTab === tab 
-                      ? 'bg-white/10 text-white font-bold' 
+                  onClick={() => setCodeTab(tab.id as any)}
+                  className={`px-2.5 py-1 rounded text-xs font-mono font-medium transition-colors ${
+                    codeTab === tab.id 
+                      ? 'bg-white/15 text-white font-bold shadow-xs' 
                       : 'text-gray-400 hover:text-gray-200'
                   }`}
                 >
-                  {tab}
+                  {tab.label}
                 </button>
               ))}
             </div>

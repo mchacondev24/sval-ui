@@ -27,7 +27,10 @@ import {
   Store,
   Sparkles,
   BarChart3,
-  Calendar
+  Calendar,
+  Code,
+  Copy,
+  Check
 } from 'lucide-react';
 import { AuraCard } from '../components/Card';
 import { AuraButton } from '../components/Button';
@@ -133,6 +136,11 @@ export const BusinessSuiteExample: React.FC = () => {
   const [customerStatusFilter, setCustomerStatusFilter] = useState('Todos');
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('Todos');
+
+  // TypeScript Service Inspector Modal State
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [serviceModalTab, setServiceModalTab] = useState<'screen' | 'service' | 'angular'>('screen');
+  const [copiedModalCode, setCopiedModalCode] = useState(false);
 
   // Reset in-memory database to original initial state
   const handleResetMemory = () => {
@@ -431,8 +439,18 @@ export const BusinessSuiteExample: React.FC = () => {
             </div>
           </div>
 
-          {/* Ephemeral Memory Controls */}
+          {/* Ephemeral Memory Controls & TypeScript Service Inspector */}
           <div className="flex items-center gap-2 flex-wrap">
+            <AuraButton
+              variant="primary"
+              size="sm"
+              onClick={() => setIsServiceModalOpen(true)}
+              leftIcon={<Code className="w-3.5 h-3.5 text-white" />}
+              title="Inspeccionar el TypeScript de la pantalla llamando al servicio"
+            >
+              TypeScript del Servicio
+            </AuraButton>
+
             <AuraButton
               variant="outline"
               size="sm"
@@ -1243,6 +1261,493 @@ export const BusinessSuiteExample: React.FC = () => {
           </div>
         </form>
       </AuraDialog>
+
+      {/* TypeScript Service Inspector Dialog */}
+      <AuraDialog
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
+        title="Arquitectura TypeScript: Pantalla buscando el Servicio"
+        size="lg"
+      >
+        <div className="flex flex-col gap-4 text-left">
+          <p className="text-xs text-[var(--aura-text-secondary)]">
+            Demostración de código TypeScript desacoplado: la pantalla (<code className="text-indigo-500 font-mono">BusinessSuiteScreen.tsx</code>) consume asíncronamente los métodos de la capa de servicio (<code className="text-indigo-500 font-mono">business.service.ts</code>) con arquitectura de memoria RAM efímera (Zero Persistence).
+          </p>
+
+          {/* Selector de Pestañas de Código */}
+          <div className="flex items-center justify-between border-b border-[var(--aura-border-default)] pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'screen', label: '1. TS Pantalla (React Screen)' },
+                { id: 'service', label: '2. TS Servicio (business.service.ts)' },
+                { id: 'angular', label: '3. Angular TS (Inyección DI)' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setServiceModalTab(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    serviceModalTab === tab.id
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-[var(--aura-surface-2)] text-[var(--aura-text-secondary)] hover:text-[var(--aura-text-primary)]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const textToCopy = serviceModalTab === 'screen' ? CODE_SCREEN_TS : serviceModalTab === 'service' ? CODE_SERVICE_TS : CODE_ANGULAR_TS;
+                navigator.clipboard.writeText(textToCopy);
+                setCopiedModalCode(true);
+                addToast({ title: 'Código Copiado', description: 'Código TypeScript copiado al portapapeles.', type: 'success' });
+                setTimeout(() => setCopiedModalCode(false), 2000);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[var(--aura-surface-2)] hover:bg-[var(--aura-surface-3)] text-xs text-[var(--aura-text-primary)] transition-colors border border-[var(--aura-border-default)]"
+            >
+              {copiedModalCode ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedModalCode ? 'Copiado' : 'Copiar TS'}</span>
+            </button>
+          </div>
+
+          {/* Visualizador de Código */}
+          <div className="rounded-lg bg-[#121214] text-gray-200 border border-gray-800 p-4 max-h-96 overflow-y-auto font-mono text-xs leading-relaxed">
+            <pre className="overflow-x-auto">
+              <code>
+                {serviceModalTab === 'screen' ? CODE_SCREEN_TS : serviceModalTab === 'service' ? CODE_SERVICE_TS : CODE_ANGULAR_TS}
+              </code>
+            </pre>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <AuraButton variant="primary" size="sm" onClick={() => setIsServiceModalOpen(false)}>
+              Entendido y Cerrar
+            </AuraButton>
+          </div>
+        </div>
+      </AuraDialog>
     </div>
   );
 };
+
+// --- TypeScript Code Representation Constants ---
+const CODE_SCREEN_TS = `// ============================================================================
+// Sval UI Design System — Pantalla Suite Comercial (TypeScript + React)
+// Archivo: BusinessSuiteScreen.tsx
+// Arquitectura Desacoplada: La vista consume el servicio de negocio 'businessService'
+// ============================================================================
+
+import React, { useState, useEffect } from 'react';
+import { 
+  Customer, 
+  Product, 
+  Sale, 
+  ExecutiveReport, 
+  businessService 
+} from '../services/business.service';
+import { 
+  AuraButton, 
+  AuraCard, 
+  AuraBadge, 
+  AuraInput, 
+  AuraSelect, 
+  AuraDialog 
+} from '@sval-ui/react';
+
+export function BusinessSuiteScreen() {
+  // 1. Estado reactivo alimentado exclusivamente desde el Servicio
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [report, setReport] = useState<ExecutiveReport | null>(null);
+
+  // Estados de control asíncrono
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isProcessingSale, setIsProcessingSale] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Estado de navegación modular
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'productos' | 'ventas' | 'reportes'>('dashboard');
+
+  // Formulario reactivo para nueva venta
+  const [saleForm, setSaleForm] = useState({
+    customerId: '',
+    productId: '',
+    quantity: 1,
+    paymentMethod: 'Tarjeta' as 'Tarjeta' | 'Transferencia' | 'Efectivo',
+  });
+
+  // 2. Ciclo de Vida: Busca los datos en el servicio asíncrono al montar la pantalla
+  useEffect(() => {
+    fetchDataFromService();
+  }, []);
+
+  /**
+   * Invoca los métodos del servicio en paralelo para optimizar la carga
+   */
+  const fetchDataFromService = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      // Llamada asíncrona concurrente a la capa de servicios
+      const [custList, prodList, salesList, execReport] = await Promise.all([
+        businessService.getCustomers(),
+        businessService.getProducts(),
+        businessService.getSales(),
+        businessService.getExecutiveReport(),
+      ]);
+
+      setCustomers(custList);
+      setProducts(prodList);
+      setSales(salesList);
+      setReport(execReport);
+
+      if (custList.length > 0 && prodList.length > 0) {
+        setSaleForm(prev => ({
+          ...prev,
+          customerId: prev.customerId || custList[0].id,
+          productId: prev.productId || prodList[0].id,
+        }));
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error al conectar con el servicio de datos.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Procesa la facturación delegando la transacción al servicio
+   */
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saleForm.customerId || !saleForm.productId) return;
+
+    try {
+      setIsProcessingSale(true);
+      // 1. Delegación completa de validación de stock y cálculos al servicio
+      const processedSale = await businessService.processSale({
+        customerId: saleForm.customerId,
+        productId: saleForm.productId,
+        quantity: Number(saleForm.quantity),
+        paymentMethod: saleForm.paymentMethod,
+      });
+
+      // 2. Refresca los datos llamando al servicio para sincronizar el estado
+      await fetchDataFromService();
+      alert(\`Factura \${processedSale.saleNumber} generada exitosamente. Total: $\${processedSale.total}\`);
+    } catch (err: any) {
+      alert(\`Fallo en la operación: \${err.message}\`);
+    } finally {
+      setIsProcessingSale(false);
+    }
+  };
+
+  /**
+   * Restablece la memoria RAM temporal llamando al servicio
+   */
+  const handleResetData = async () => {
+    businessService.resetToInitialState();
+    await fetchDataFromService();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12 text-sm text-[var(--aura-text-muted)] font-mono">
+        Buscando datos en el servicio de negocio (RAM Data Provider)...
+      </div>
+    );
+  }
+
+  return (
+    <div className="sval-layout max-w-7xl mx-auto p-6 font-sans space-y-6">
+      <header className="flex items-center justify-between pb-4 border-b border-[var(--aura-border-default)]">
+        <div>
+          <h1 className="text-xl font-bold text-[var(--aura-text-primary)]">Suite Comercial Sval</h1>
+          <p className="text-xs text-[var(--aura-text-secondary)]">Pantalla TypeScript con Inyección de Servicio Asíncrono</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <AuraBadge variant="success" dot>Servicio Activo</AuraBadge>
+          <AuraButton variant="outline" size="sm" onClick={handleResetData}>Reiniciar RAM</AuraButton>
+        </div>
+      </header>
+
+      {/* Navegación Modular */}
+      <nav className="flex gap-2">
+        {(['dashboard', 'clientes', 'productos', 'ventas', 'reportes'] as const).map(tab => (
+          <AuraButton 
+            key={tab} 
+            variant={activeTab === tab ? 'primary' : 'outline'} 
+            size="sm" 
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab.toUpperCase()}
+          </AuraButton>
+        ))}
+      </nav>
+
+      {/* Vista de Facturación / Registro de Ventas */}
+      {activeTab === 'ventas' && (
+        <AuraCard className="p-6">
+          <h2 className="text-lg font-bold mb-4">Nueva Factura</h2>
+          <form onSubmit={handleCheckout} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-semibold mb-1">Cliente</label>
+              <select 
+                value={saleForm.customerId} 
+                onChange={e => setSaleForm({ ...saleForm, customerId: e.target.value })}
+                className="w-full p-2 rounded border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)] text-sm"
+              >
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1">Producto</label>
+              <select 
+                value={saleForm.productId} 
+                onChange={e => setSaleForm({ ...saleForm, productId: e.target.value })}
+                className="w-full p-2 rounded border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)] text-sm"
+              >
+                {products.map(p => (
+                  <option key={p.id} value={p.id} disabled={p.stock <= 0}>
+                    {p.name} (Stock: {p.stock}) - \${p.price}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1">Cantidad</label>
+              <input 
+                type="number" 
+                min={1} 
+                value={saleForm.quantity} 
+                onChange={e => setSaleForm({ ...saleForm, quantity: Number(e.target.value) })}
+                className="w-full p-2 rounded border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)] text-sm"
+              />
+            </div>
+
+            <AuraButton type="submit" variant="primary" loading={isProcessingSale} fullWidth>
+              Procesar en Servicio
+            </AuraButton>
+          </form>
+        </AuraCard>
+      )}
+    </div>
+  );
+}`;
+
+const CODE_SERVICE_TS = `// ============================================================================
+// Sval UI Design System — Capa de Servicio TypeScript de Negocio
+// Archivo: business.service.ts
+// Arquitectura: Base de Datos Efímera en Memoria RAM (Zero Persistence)
+// ============================================================================
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  totalPurchases: number;
+  status: 'VIP' | 'Activo' | 'Inactivo';
+}
+
+export interface Product {
+  id: string;
+  code: string;
+  name: string;
+  category: 'Software' | 'Servicios' | 'Hardware' | 'Diseño';
+  price: number;
+  stock: number;
+  status: 'Disponible' | 'Bajo Stock' | 'Agotado';
+}
+
+export interface Sale {
+  id: string;
+  saleNumber: string;
+  customerId: string;
+  customerName: string;
+  itemsCount: number;
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentMethod: 'Tarjeta' | 'Transferencia' | 'Efectivo';
+  date: string;
+  status: 'Completada' | 'Cancelada';
+}
+
+export interface ExecutiveReport {
+  totalRevenue: number;
+  totalTax: number;
+  averageTicket: number;
+  totalInStock: number;
+  inventoryValuation: number;
+  topCustomers: { id: string; name: string; totalPurchases: number; percentage: number }[];
+  paymentDistribution: { method: string; total: number; percentage: number }[];
+}
+
+export interface CreateSaleDto {
+  customerId: string;
+  productId: string;
+  quantity: number;
+  paymentMethod: 'Tarjeta' | 'Transferencia' | 'Efectivo';
+}
+
+export class BusinessService {
+  // Almacenamiento volátil en memoria RAM (Zero Persistence)
+  private customers: Customer[] = [
+    { id: 'CLI-001', name: 'Corporación Managua S.A.', email: 'contacto@corpmanagua.ni', phone: '+505 2278-1000', city: 'Managua', totalPurchases: 4850, status: 'VIP' },
+    { id: 'CLI-002', name: 'Distribuidora del Norte', email: 'ventas@disnorte.com', phone: '+505 2713-2244', city: 'Estelí', totalPurchases: 2340, status: 'Activo' },
+  ];
+
+  private products: Product[] = [
+    { id: 'PROD-101', code: 'SVAL-SRV-01', name: 'Licencia Enterprise Sval UI', category: 'Software', price: 499, stock: 45, status: 'Disponible' },
+    { id: 'PROD-102', code: 'HW-NODE-03', name: 'Servidor Edge IoT Micro-Gateway', category: 'Hardware', price: 850, stock: 8, status: 'Disponible' },
+  ];
+
+  private sales: Sale[] = [
+    { id: 'VTA-1001', saleNumber: 'FAC-2026-001', customerId: 'CLI-001', customerName: 'Corporación Managua S.A.', itemsCount: 2, subtotal: 1699, tax: 254.85, total: 1953.85, paymentMethod: 'Transferencia', date: '2026-09-15', status: 'Completada' },
+  ];
+
+  // Métodos del Servicio
+  public async getCustomers(): Promise<Customer[]> {
+    return [...this.customers];
+  }
+
+  public async getProducts(): Promise<Product[]> {
+    return [...this.products];
+  }
+
+  public async getSales(): Promise<Sale[]> {
+    return [...this.sales];
+  }
+
+  public async processSale(dto: CreateSaleDto): Promise<Sale> {
+    const product = this.products.find(p => p.id === dto.productId);
+    if (!product) throw new Error('Producto no encontrado.');
+    if (product.stock < dto.quantity) throw new Error(\`Stock insuficiente (quedan \${product.stock} unidades).\`);
+
+    const customer = this.customers.find(c => c.id === dto.customerId);
+    if (!customer) throw new Error('Cliente no encontrado.');
+
+    const subtotal = Number((product.price * dto.quantity).toFixed(2));
+    const tax = Number((subtotal * 0.15).toFixed(2)); // IVA 15%
+    const total = Number((subtotal + tax).toFixed(2));
+
+    const newSale: Sale = {
+      id: \`VTA-\${Date.now()}\`,
+      saleNumber: \`FAC-2026-\${String(this.sales.length + 1).padStart(3, '0')}\`,
+      customerId: customer.id,
+      customerName: customer.name,
+      itemsCount: dto.quantity,
+      subtotal,
+      tax,
+      total,
+      paymentMethod: dto.paymentMethod,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Completada',
+    };
+
+    // Actualiza en memoria RAM
+    this.sales = [newSale, ...this.sales];
+    this.products = this.products.map(p => p.id === product.id ? { ...p, stock: p.stock - dto.quantity } : p);
+    this.customers = this.customers.map(c => c.id === customer.id ? { ...c, totalPurchases: c.totalPurchases + total } : c);
+
+    return newSale;
+  }
+
+  public async getExecutiveReport(): Promise<ExecutiveReport> {
+    const totalRevenue = Number(this.sales.reduce((acc, s) => acc + s.total, 0).toFixed(2));
+    const totalTax = Number((totalRevenue * 0.15).toFixed(2));
+    const averageTicket = this.sales.length > 0 ? Number((totalRevenue / this.sales.length).toFixed(2)) : 0;
+    const totalInStock = this.products.reduce((acc, p) => acc + p.stock, 0);
+    const inventoryValuation = Number(this.products.reduce((acc, p) => acc + (p.price * p.stock), 0).toFixed(2));
+
+    return {
+      totalRevenue,
+      totalTax,
+      averageTicket,
+      totalInStock,
+      inventoryValuation,
+      topCustomers: this.customers.slice(0, 5).map(c => ({ id: c.id, name: c.name, totalPurchases: c.totalPurchases, percentage: 50 })),
+      paymentDistribution: [{ method: 'Tarjeta', total: totalRevenue, percentage: 100 }],
+    };
+  }
+
+  public resetToInitialState(): void {
+    // Restablece los datos iniciales volátiles
+  }
+}
+
+export const businessService = new BusinessService();`;
+
+const CODE_ANGULAR_TS = `// ============================================================================
+// Sval UI Design System — Componente Angular 17+ (TypeScript Standalone)
+// Archivo: business-suite.component.ts
+// Consumiendo BusinessService mediante Inyección de Dependencias (DI)
+// ============================================================================
+
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { BusinessService, Customer, Product, Sale } from './business.service';
+
+@Component({
+  selector: 'app-business-suite',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: \`
+    <div class="sval-suite max-w-7xl mx-auto p-6 font-sans">
+      <header class="flex justify-between items-center pb-4 border-b border-[var(--aura-border-default)]">
+        <div>
+          <h1 class="text-xl font-bold text-[var(--aura-text-primary)]">Suite Comercial (Angular)</h1>
+          <p class="text-xs text-[var(--aura-text-secondary)]">Inyección de Dependencias Angular con Sval Tokens</p>
+        </div>
+        <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-600">
+          DI Service Connected
+        </span>
+      </header>
+
+      <div *ngIf="isLoading" class="text-center py-12 text-sm text-[var(--aura-text-muted)]">
+        Consultando servicio de negocio con Angular...
+      </div>
+
+      <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
+        <div class="p-4 rounded-xl border border-[var(--aura-border-default)] bg-[var(--aura-surface-1)]">
+          <span class="text-xs text-[var(--aura-text-secondary)]">Clientes en RAM</span>
+          <p class="text-2xl font-bold mt-1 text-[var(--aura-text-primary)]">{{ customers.length }}</p>
+        </div>
+      </div>
+    </div>
+  \`
+})
+export class BusinessSuiteComponent implements OnInit {
+  // Inyección del servicio tipado
+  private businessService = inject(BusinessService);
+
+  public customers: Customer[] = [];
+  public products: Product[] = [];
+  public sales: Sale[] = [];
+  public isLoading: boolean = true;
+
+  async ngOnInit(): Promise<void> {
+    await this.fetchData();
+  }
+
+  async fetchData(): Promise<void> {
+    this.isLoading = true;
+    try {
+      this.customers = await this.businessService.getCustomers();
+      this.products = await this.businessService.getProducts();
+      this.sales = await this.businessService.getSales();
+    } finally {
+      this.isLoading = false;
+    }
+  }
+}`;
